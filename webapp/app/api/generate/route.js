@@ -1,8 +1,8 @@
-import Groq from 'groq-sdk';
+import { NextResponse } from 'next/server';
 
 /**
  * POST /api/generate
- * Generates blog content using Groq AI
+ * Generates blog content using Groq AI via direct fetch
  * 
  * Input: { topic: string }
  * Output: { title, content, metaDescription, tags }
@@ -11,34 +11,35 @@ export async function POST(request) {
   try {
     // Parse request body
     const { topic } = await request.json();
-    
+
     // Validate input
     if (!topic || topic.trim().length === 0) {
-      return Response.json(
-        { error: 'Topic is required' }, 
+      return NextResponse.json(
+        { error: 'Topic is required' },
         { status: 400 }
       );
     }
 
     // Validate API key
     const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey || apiKey.trim().length === 0 || apiKey === 'your_groq_api_key_here') {
-      return Response.json(
-        { error: 'GROQ_API_KEY environment variable is missing or not configured. Please check your .env.local file and restart the dev server.' }, 
+    if (!apiKey || apiKey.trim().length === 0 || apiKey.includes('your_groq_api_key')) {
+      return NextResponse.json(
+        { error: 'GROQ_API_KEY environment variable is missing or not configured.' },
         { status: 500 }
       );
     }
 
-    // Initialize Groq client
-    const groq = new Groq({
-      apiKey: apiKey,
-    });
-
-    // Call Groq API with Llama model
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [{
-        role: "user",
-        content: `You are an expert WordPress content creator and SEO specialist.
+    // Call Groq API directly using fetch
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messages: [{
+          role: "user",
+          content: `You are an expert WordPress content creator and SEO specialist.
 
 Generate a complete, professional blog post about: "${topic}"
 
@@ -51,25 +52,38 @@ CRITICAL: Return ONLY a valid JSON object with this EXACT structure (no markdown
 }
 
 Make the content professional, engaging, and optimized for search engines. Focus on providing real value to readers.`
-      }],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.7,
-      max_tokens: 2000,
+        }],
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.7,
+        max_tokens: 2000,
+        response_format: { type: "json_object" }
+      })
     });
 
-    // Extract response
-    const responseText = chatCompletion.choices[0]?.message?.content || '';
-    
-    // Find JSON object in response (handles cases where AI adds extra text)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to extract JSON from AI response');
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Groq API Error: ${response.status} - ${errorData}`);
     }
-    
-    const blogData = JSON.parse(jsonMatch[0]);
+
+    const data = await response.json();
+    const responseText = data.choices[0]?.message?.content || '';
+
+    // Parse JSON safely
+    let blogData;
+    try {
+      blogData = JSON.parse(responseText);
+    } catch (e) {
+      // Fallback regex extraction if exact JSON parsing fails
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        blogData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('Failed to parse JSON from AI response');
+      }
+    }
 
     // Validate response structure
-    if (!blogData.title || !blogData.content || !blogData.metaDescription || !blogData.tags) {
+    if (!blogData.title || !blogData.content) {
       throw new Error('Invalid response structure from AI');
     }
 
@@ -78,21 +92,12 @@ Make the content professional, engaging, and optimized for search engines. Focus
       blogData.tags = [];
     }
 
-    return Response.json(blogData);
-    
+    return NextResponse.json(blogData);
+
   } catch (error) {
     console.error('Generation error:', error);
-    
-    // Provide helpful error messages
-    if (error.message.includes('API key')) {
-      return Response.json(
-        { error: 'API key is missing or invalid. Please check your environment variables.' }, 
-        { status: 500 }
-      );
-    }
-    
-    return Response.json(
-      { error: error.message || 'Failed to generate content. Please try again.' }, 
+    return NextResponse.json(
+      { error: error.message || 'Failed to generate content.' },
       { status: 500 }
     );
   }
