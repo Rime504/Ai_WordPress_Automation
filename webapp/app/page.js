@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Sparkles, Copy, Loader2, CheckCircle } from 'lucide-react';
+import { Sparkles, Copy, Loader2, CheckCircle, Upload } from 'lucide-react';
 
 export default function Home() {
   // State management
@@ -9,6 +9,7 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   /**
    * Calls the API to generate blog content
@@ -66,6 +67,50 @@ export default function Home() {
         console.error('Copy failed:', err);
         alert('Failed to copy to clipboard');
       });
+  };
+
+  /**
+   * Publishes the generated blog post to WordPress
+   */
+  const publish = async () => {
+    if (!result) return;
+
+    setPublishing(true);
+    setError(null);
+
+    try {
+      // Convert plain text content to HTML format
+      // WordPress expects HTML content, so we'll convert paragraphs
+      const blogHTML = result.content
+        .split('\n\n')
+        .map(paragraph => `<p>${paragraph.trim()}</p>`)
+        .join('\n');
+
+      const res = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: result.title,
+          content: blogHTML,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error?.message || JSON.stringify(data.error) || 'Failed to publish to WordPress');
+      }
+
+      // Show success message with post ID if available
+      const postId = data.wp?.id || 'successfully';
+      alert(`Published to WordPress! Post ID: ${postId}`);
+    } catch (err) {
+      setError(err.message);
+      console.error('Publish error:', err);
+      alert(`Failed to publish: ${err.message}`);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -147,19 +192,38 @@ export default function Home() {
         {result && (
           <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 animate-fadeIn">
             
-            {/* Header with copy button */}
+            {/* Header with action buttons */}
             <div className="flex justify-between items-center mb-6 pb-4 border-b">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <CheckCircle className="w-6 h-6 text-green-500" />
                 Generated Content
               </h2>
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-medium text-sm"
-              >
-                <Copy className="w-4 h-4" />
-                {copied ? 'Copied!' : 'Copy All'}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={publish}
+                  disabled={publishing}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Publish to WordPress
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-medium text-sm"
+                >
+                  <Copy className="w-4 h-4" />
+                  {copied ? 'Copied!' : 'Copy All'}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">

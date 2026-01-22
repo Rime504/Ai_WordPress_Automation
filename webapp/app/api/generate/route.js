@@ -20,9 +20,18 @@ export async function POST(request) {
       );
     }
 
+    // Validate API key
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey || apiKey.trim().length === 0 || apiKey === 'your_groq_api_key_here') {
+      return Response.json(
+        { error: 'GROQ_API_KEY environment variable is missing or not configured. Please check your .env.local file and restart the dev server.' }, 
+        { status: 500 }
+      );
+    }
+
     // Initialize Groq client
     const groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
+      apiKey: apiKey,
     });
 
     // Call Groq API with Llama model
