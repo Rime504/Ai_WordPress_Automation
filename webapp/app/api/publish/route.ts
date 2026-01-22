@@ -14,6 +14,7 @@ export async function POST(req: Request) {
         Authorization: `Basic ${auth}`,
         "Content-Type": "application/json",
         Accept: "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify({
         title,
