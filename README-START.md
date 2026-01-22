@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide
+    # 🚀 Quick Start Guide
 
 ## Starting the Dev Server
 
@@ -13,7 +13,7 @@
 cd webapp
 
 # Start the server
-npm run dev
+npm run dev 
 ```
 
 ### Option 3: One-liner (PowerShell)
