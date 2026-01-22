@@ -18,9 +18,45 @@ An intelligent web application that leverages Groq's ultra-fast AI to create com
 - **🎯 SEO Optimized**: Automatically generates SEO-friendly titles, meta descriptions, and relevant tags
 - **📝 Professional Quality**: Llama 3.3 70B ensures well-written, engaging, and valuable content
 - **📋 One-Click Copy**: Copy all generated content to clipboard instantly
+- **📤 WordPress Publishing**: One-click publish directly to your WordPress site
 - **📱 Fully Responsive**: Beautiful UI that works seamlessly on desktop, tablet, and mobile
 - **🎨 Modern Design**: Clean, professional interface built with Tailwind CSS
 - **🚀 Lightning Fast**: Groq API provides the fastest AI inference in the market
+
+---
+
+## 📤 WordPress Publishing Feature
+
+This app includes **one-click WordPress publishing** that sends generated content directly to your WordPress site!
+
+### ⚠️ Important: WordPress Configuration Required
+
+**Before publishing works, you need to configure WordPress permalinks (1-minute fix):**
+
+1. **Login to WordPress Admin** → `https://yoursite.com/wp-admin`
+2. **Go to Settings → Permalinks**
+3. **Select "Post name"** (NOT "Plain")
+4. **Click "Save Changes"**
+
+**Why this is needed:** WordPress REST API (which enables publishing) requires pretty permalinks to function. This is standard WordPress configuration.
+
+### ✅ After Permalink Fix:
+
+1. Generate content in the app
+2. Click "Publish to WordPress"
+3. Content appears instantly on your WordPress site!
+
+### 📋 WordPress Setup Checklist:
+
+- [ ] Permalinks set to "Post name" (Settings → Permalinks)
+- [ ] Application Password created (Users → Profile → Application Passwords)
+- [ ] Environment variables configured in Vercel:
+  - `WP_API_URL` - Your WordPress REST API URL
+  - `WP_USER` - Your WordPress username
+  - `WP_APP_PASS` - Your application password
+  - `GROQ_API_KEY` - Your Groq API key
+
+**📚 Complete Setup Guide:** See `DEPLOYMENT.md` for detailed step-by-step instructions.
 
 ---
 
